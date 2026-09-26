@@ -75,6 +75,35 @@ read-only bind mount in `docker-compose.yml` and point it at your host cache:
 # - ./local_fastf1_cache:/app/.fastf1-cache:ro
 ```
 
+## Deploying on Dokploy (with Traefik)
+
+The app can be hosted on a **Dokploy VPS** fronted by **Traefik** (Dokploy's default
+reverse proxy). Use the dedicated `docker-compose.dokploy.yml` file.
+
+1. **Add your app in Dokploy** as a **Docker Compose** service and paste the
+   contents of `docker-compose.dokploy.yml`.
+2. **Set your domain** on the app's **Domains** tab (e.g. `f1.example.com`), or
+   edit the `traefik.http.routers.f1-replay.rule=Host(\`your-domain.com\`)` label.
+   Dokploy + Let's Encrypt issues the TLS certificate automatically.
+3. Dokploy will build the image from this repo's `Dockerfile`.
+
+Key differences from the local file:
+
+- **No `container_name`** — required by Dokploy (breaks logs/metrics otherwise).
+- **Joins the external `dokploy-network`** so Traefik can route to the container
+  (`dokploy-network` already exists on any Dokploy VPS).
+- The **web UI** (port `6080`) is only **exposed**, not published — Traefik routes
+  `https://your-domain` to it, with a **WebSocket middleware** so the noVNC
+  "Connect" button works.
+- The **telemetry stream (9999)** and **raw VNC (5900)** remain published TCP ports,
+  reachable directly at `http://<server-ip>:9999` / `<server-ip>:5900`.
+
+> **Firewall:** open TCP `9999` (and `5900` if you want raw VNC) in your VPS
+> firewall. Web access goes through Traefik on `443` only.
+>
+> **Dockerfile:** the app's OpenGL GUI works fine on a headless VPS because the
+> image ships its own virtual display (Xvfb) + Mesa software OpenGL.
+
 ## Notes & troubleshooting
 
 - **OpenGL** is provided via Mesa **software** rendering (`llvmpipe`) — no GPU
@@ -90,6 +119,7 @@ read-only bind mount in `docker-compose.yml` and point it at your host cache:
 ## Files
 
 - `Dockerfile` — image build (virtual display + Mesa + Python deps + app).
-- `docker-compose.yml` — ports, volumes, run modes.
+- `docker-compose.yml` — local run: ports, volumes, modes.
+- `docker-compose.dokploy.yml` — Dokploy/Traefik deployment (noVNC behind a domain).
 - `entrypoint.sh` — starts Xvfb/openbox/x11vnc/noVNC then the app.
 - `.dockerignore` — keeps secrets/caches/docs/images out of the build context.

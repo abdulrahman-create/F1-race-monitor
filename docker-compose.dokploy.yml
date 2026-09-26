@@ -1,0 +1,64 @@
+# ---------------------------------------------------------------------------
+# F1 Race Replay — Dokploy + Traefik compose file
+#
+# Deploy this app on a Dokploy VPS with Traefik as the reverse proxy.
+# The GUI (noVNC) is exposed at https://<your-domain> and the telemetry /
+# VNC TCP endpoints are exposed on their ports.
+#
+# Dokploy notes:
+#   - The container MUST join the external `dokploy-network` so Traefik can
+#     route to it.
+#   - Do NOT set `container_name` in Dokploy (breaks logs/metrics).
+#   - Traefik routes the single WEB port (6080). Telemetry (9999) & raw VNC
+#     (5900) are published TCP ports reachable directly on the host.
+# ---------------------------------------------------------------------------
+
+services:
+  replay:
+    build: .
+    image: f1-race-replay:latest
+    # no container_name here — Dokploy needs it unset
+    restart: always
+    environment:
+      # Virtual display + resolution (software OpenGL via Mesa)
+      - DISPLAY=:99
+      - RESOLUTION=1440x900x24
+      - NOVNC_PORT=6080
+    # For Dokploy: the web port (6080) is only EXPOSED (not published to the
+    # host) so Traefik can route to it via the dokploy-network. TCP endpoints
+    # (telemetry 9999, raw VNC 5900) are PUBLISHED ports reachable directly
+    # at <server-ip>:<port>. Remove 5900 if you only use the noVNC browser UI.
+    expose:
+      - "6080"
+    ports:
+      - "9999:9999"
+      - "5900:5900"
+    volumes:
+      - fastf1_cache:/app/.fastf1-cache
+      - computed_data:/app/computed_data
+    command: ["python", "main.py"]
+    shm_size: "2gb"
+    networks:
+      - dokploy-network
+    labels:
+      # --- Traefik: expose the noVNC web GUI on your domain ---
+      - "traefik.enable=true"
+      # Replace `f1race.example.com` with your real domain / subdomain.
+      - "traefik.http.routers.f1-replay.rule=Host(`f1race.example.com`)"
+      - "traefik.http.routers.f1-replay.entrypoints=websecure"
+      - "traefik.http.routers.f1-replay.tls.certResolver=letsencrypt"
+      # Point Traefik at the noVNC web UI inside the container.
+      - "traefik.http.services.f1-replay.loadbalancer.server.port=6080"
+      # noVNC uses WebSockets — these headers are REQUIRED or the browser
+      # "Connect" button will fail behind Traefik.
+      - "traefik.http.middlewares.f1-replay-ws.headers.customrequestheaders.Connection=Upgrade"
+      - "traefik.http.middlewares.f1-replay-ws.headers.customrequestheaders.Upgrade=websocket"
+      - "traefik.http.routers.f1-replay.middlewares=f1-replay-ws@docker"
+
+volumes:
+  fastf1_cache:
+  computed_data:
+
+networks:
+  dokploy-network:
+    external: true
