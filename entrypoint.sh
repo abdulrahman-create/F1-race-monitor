@@ -14,6 +14,12 @@ set -e
 : "${NOVNC_PORT:=6080}"
 NOVNC_DIR=/usr/share/novnc
 
+# Clean up stale X locks from a previous (possibly killed) run so Xvfb can
+# start again. Without this, Xvfb refuses to start ("Server is already active
+# for display") and the Qt GUI segfaults (exit 139).
+DISPLAY_NUM="${DISPLAY#:}"
+rm -f "/tmp/.X${DISPLAY_NUM}-lock" "/tmp/.X11-unix/X${DISPLAY_NUM}" 2>/dev/null || true
+
 echo "[entrypoint] Starting Xvfb on ${DISPLAY} at ${RESOLUTION}..."
 Xvfb "${DISPLAY}" -screen 0 "${RESOLUTION}" -ac +extension GLX +render -noreset >/tmp/xvfb.log 2>&1 &
 XVFB_PID=$!
