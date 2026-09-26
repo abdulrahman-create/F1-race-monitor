@@ -43,8 +43,8 @@ services:
     labels:
       # --- Traefik: expose the noVNC web GUI on your domain ---
       - "traefik.enable=true"
-      # Replace `f1race.example.com` with your real domain / subdomain.
-      - "traefik.http.routers.f1-replay.rule=Host(`f1race.example.com`)"
+      # Your real domain / subdomain that points at this Dokploy VPS.
+      - "traefik.http.routers.f1-replay.rule=Host(`f1.waniehomebaker.my`)"
       - "traefik.http.routers.f1-replay.entrypoints=websecure"
       - "traefik.http.routers.f1-replay.tls.certResolver=letsencrypt"
       # Point Traefik at the noVNC web UI inside the container.
