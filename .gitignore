@@ -14,6 +14,9 @@ __pycache__/
 .fastf1-cache
 computed_data/
 
+# graphify knowledge-graph output
+graphify-out/
+
 # Generated media/output
 output_animation.mp4
 still_frame.png

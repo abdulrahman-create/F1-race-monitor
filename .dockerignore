@@ -1,0 +1,41 @@
+# Keep the Docker build context small and avoid caching secrets/local data
+
+# Version control
+.git
+.gitignore
+.gitattributes
+.github
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.pkl
+
+# FastF1 cache + computed data (persisted via volumes instead)
+.fastf1-cache/
+computed_data/
+graphify-out/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Tests / tooling
+.pytest_cache/
+tests/
+
+# Local secrets
+.env
+*.env
+
+# Docs images are large and not needed at runtime
+images/
+docs/
+
+# Stream/cost artifacts
+cost.json

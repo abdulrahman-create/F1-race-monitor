@@ -1,0 +1,45 @@
+services:
+  replay:
+    build: .
+    image: f1-race-replay:latest
+    container_name: f1-race-replay
+    environment:
+      # Virtual display + resolution (software OpenGL via Mesa)
+      - DISPLAY=:99
+      - RESOLUTION=1440x900x24
+      # noVNC port used internally by the entrypoint
+      - NOVNC_PORT=6080
+      # --- Optional API keys for doc/media semantic extraction ---
+      # The core app only needs FastF1 (no key). Set one of these only
+      # if you use graphify or other semantic passes.
+      # - ANTHROPIC_API_KEY=...
+      # - GEMINI_API_KEY=...
+      # - OPENAI_API_KEY=...
+    ports:
+      # Browser access to the GUI (noVNC)
+      - "6080:6080"
+      # Telemetry TCP stream (src/services/stream.py)
+      - "9999:9999"
+      # Raw VNC (optional; most users use 6080)
+      - "5900:5900"
+    volumes:
+      # Persist FastF1 downloads + caches across container restarts
+      - fastf1_cache:/app/.fastf1-cache
+      - computed_data:/app/computed_data
+      # Optional: mount an existing local cache to avoid re-downloading
+      # - ./local_fastf1_cache:/app/.fastf1-cache:ro
+      # Persist data/computed outputs to the host if you like
+      # - ./output:/app/graphify-out
+    # Default command: launch the Qt GUI. Override for headless/CLI modes:
+    #   docker compose run replay python main.py --cli
+    #   docker compose run replay python main.py --list-rounds --year 2024
+    #   docker compose run replay python main.py --viewer --year 2024 --round 12
+    command: ["python", "main.py"]
+    # The GUI app needs network to download FastF1 telemetry
+    network_mode: bridge
+    # Useful for the replay timing/performance
+    shm_size: "2gb"
+
+volumes:
+  fastf1_cache:
+  computed_data:
