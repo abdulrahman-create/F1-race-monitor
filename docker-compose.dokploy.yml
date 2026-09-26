@@ -40,19 +40,17 @@ services:
     shm_size: "2gb"
     networks:
       - dokploy-network
-    labels:
-      # --- Traefik: expose the noVNC web GUI on your domain ---
-      - "traefik.enable=true"
-      # Replace `f1race.example.com` with your real domain / subdomain.
-      - "traefik.http.routers.f1-replay.entrypoints=websecure"
-      - "traefik.http.routers.f1-replay.tls.certResolver=letsencrypt"
-      # Point Traefik at the noVNC web UI inside the container.
-      - "traefik.http.services.f1-replay.loadbalancer.server.port=6080"
-      # noVNC uses WebSockets — these headers are REQUIRED or the browser
-      # "Connect" button will fail behind Traefik.
-      - "traefik.http.middlewares.f1-replay-ws.headers.customrequestheaders.Connection=Upgrade"
-      - "traefik.http.middlewares.f1-replay-ws.headers.customrequestheaders.Upgrade=websocket"
-      - "traefik.http.routers.f1-replay.middlewares=f1-replay-ws@docker"
+    # Option B: domains are managed in the Dokploy UI (Domains tab), which
+    # generates the Traefik routing + Let's Encrypt certificate for your
+    # domain automatically. So NO manual Traefik labels are set here.
+    #
+    # In the Dokploy UI set:  Domain = your domain (e.g. f1.waniehomebaker.my)
+    #                         Service = replay
+    #                         Port    = 6080
+    #
+    # If noVNC's "Connect" button fails over HTTPS, add a WebSocket middleware
+    # in Dokploy's advanced domain settings for path "/websockify" (noVNC
+    # proxies the VNC stream over WebSocket there).
 
 volumes:
   fastf1_cache:

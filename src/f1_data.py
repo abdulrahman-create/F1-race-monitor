@@ -165,7 +165,18 @@ def load_session(year, round_number, session_type="R"):
 
 
 def get_driver_colors(session):
-    color_mapping = fastf1.plotting.get_driver_color_mapping(session)
+    # FastF1 needs the live-timing "driver list" API to build the team/driver
+    # color mapping. For very recent (or not-yet-archived) sessions that
+    # endpoint can be empty and raises SessionNotAvailableError. Fall back to
+    # a neutral color per driver instead of crashing the replay.
+    try:
+        color_mapping = fastf1.plotting.get_driver_color_mapping(session)
+    except Exception:
+        print("Warning: could not load driver color mapping, using defaults")
+        # Neutral fallback for every driver in the session.
+        color_mapping = {}
+        for drv in getattr(session, "drivers", []) or []:
+            color_mapping[drv] = "#808080"  # gray
 
     # Convert hex colors to RGB tuples
     rgb_colors = {}
