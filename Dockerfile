@@ -88,6 +88,16 @@ RUN mkdir -p /app/.fastf1-cache /app/computed_data \
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# noVNC ships no index.html, so a reverse proxy routing "/" to the container
+# returns 404 at the root. Add a tiny redirect so "/" lands on vnc.html.
+RUN printf '%s\n' \
+    '<!DOCTYPE html>' \
+    '<html><head><meta charset="utf-8">' \
+    '<meta http-equiv="refresh" content="0; url=vnc.html">' \
+    '<title>F1 Race Replay</title></head>' \
+    '<body><a href="vnc.html">Open F1 Race Replay</a></body></html>' \
+    > /usr/share/novnc/index.html
+
 # Browser GUI (noVNC), telemetry TCP stream, VNC (optional)
 EXPOSE 6080 9999 5900
 
